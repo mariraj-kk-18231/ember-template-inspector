@@ -3,7 +3,6 @@
 const fs = require('fs');
 const path = require('path');
 const launch = require('launch-editor');
-const FileNamePlugin = require('./lib/file-name-plugin');
 
 const processDir = process.cwd();
 const preferencePath = path.join(processDir, 'template-inspectorrc.json');
@@ -43,11 +42,10 @@ module.exports = {
       let filePath;
       let { file } = req.query;
       let [appOrAddon, fileIndex, line, column] = file.split(':');
-      let { moduleName, moduleRootPath, files } = fileLocationHash[appOrAddon];
+      let { moduleRootPath, files } = fileLocationHash[appOrAddon];
 
       if (files) {
         let fileName = files[fileIndex];
-        fileName = fileName.replace(moduleName, '');
         filePath = path.join(moduleRootPath, fileName);
       }
 
@@ -87,7 +85,6 @@ module.exports = {
     let emberApp = this._findHost();
     let { options } = emberApp;
     let moduleRootPath, moduleName;
-    let files = {};
 
     if (options.name === app.name && options.trees.app === 'tests/dummy/app') {
       moduleRootPath = `${processDir}/tests/dummy/app`;
@@ -100,6 +97,10 @@ module.exports = {
         typeof parent.name === 'function' ? parent.name() : parent.name;
     }
 
+    let files = fs
+      .readdirSync(moduleRootPath, { recursive: true })
+      .filter((path) => path.endsWith('.hbs'));
+
     fileLocationHash[appOrAddonIndex] = {
       moduleName,
       moduleRootPath,
@@ -108,11 +109,17 @@ module.exports = {
 
     registry.add('htmlbars-ast-plugin', {
       name: 'file-name-plugin',
-      plugin: FileNamePlugin({
-        appOrAddonIndex: appOrAddonIndex++,
-        fileIndex: 1,
-        files,
-      }),
+      plugin: {
+        _parallelBabel: {
+          requireFile: __dirname + '/lib/build-plugin',
+          buildUsing: 'buildPlugin',
+          params: {
+            moduleName,
+            appOrAddonIndex: appOrAddonIndex++,
+            files
+          }
+        },
+      },
       baseDir() {
         return __dirname;
       },

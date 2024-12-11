@@ -18,8 +18,14 @@ export default class TemplateInspectorService extends Service {
   }
 
   getFileInfo(fileInfo) {
-    let [appOrAddon, fileIndex, line, column] = fileInfo.split(':');
-    let fileName = this.fileLocationHash[appOrAddon].files[fileIndex];
+    let [appOrAddon, fileIndexOrName = '', line, column] = fileInfo.split(':');
+    let isFileName = fileIndexOrName.startsWith('f-');
+    let fileName;
+    if (isFileName) {
+      fileName = fileIndexOrName.slice(2);
+    } else {
+      fileName = this.fileLocationHash[appOrAddon].files[fileIndex];
+    }
 
     return `${fileName}:${line}:${column}`;
   }

@@ -72,6 +72,11 @@ function attachClickListener($tooltip, templateInspectorService) {
       event.stopPropagation();
       event.preventDefault();
 
+      let [_, fileIndexOrName = ''] = fileInfo.split(':');
+      let isFileName = fileIndexOrName.includes('f-');
+      if (isFileName) {
+        return;
+      }
       await templateInspectorService.openFile(fileInfo);
       $tooltip.style.display = 'none';
     }
